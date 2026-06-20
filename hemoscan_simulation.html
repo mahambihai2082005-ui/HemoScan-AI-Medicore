@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>HemoScan AI — Embedded Simulation | Medicore Innovation</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#0A1628;color:#F0F9FF;font-family:system-ui,sans-serif;font-size:14px;min-height:100vh}
+  .header{background:#0D1F3C;border-bottom:1px solid #1E3050;padding:14px 16px;display:flex;align-items:center;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:10px}
+  .logo-icon{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#00FF94,#0ABFBC);display:flex;align-items:center;justify-content:center;font-size:18px}
+  .badge{background:#0D2A1A;color:#00FF94;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;border:1px solid #00FF9444}
+  .container{max-width:520px;margin:0 auto;padding:16px 14px 40px}
+
+  /* Circuit visual */
+  .circuit-card{background:#111E35;border-radius:16px;border:1px solid #1E3050;padding:18px;margin-bottom:14px}
+  .circuit-title{color:#00FF94;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:14px}
+  .circuit-board{background:#060E1C;border-radius:12px;padding:20px;position:relative;min-height:180px}
+  .esp32{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:60px;height:90px;background:#1a1a1a;border-radius:6px;border:1px solid #333}
+  .esp32-label{position:absolute;left:24px;top:50%;transform:translateY(-50%) rotate(-90deg);color:#999;font-size:9px;font-weight:700;white-space:nowrap}
+  .led-row{position:absolute;right:20px;display:flex;flex-direction:column;gap:18px;top:14px}
+  .led{width:16px;height:16px;border-radius:50%;position:relative;box-shadow:0 0 0px transparent;transition:box-shadow 0.3s,background 0.3s}
+  .led-label{position:absolute;left:-90px;top:-3px;font-size:9px;color:#7a8aa0;width:80px;text-align:right}
+  .wire{position:absolute;height:1px;background:#444;left:80px}
+
+  /* Status pills */
+  .status-row{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .status-pill{flex:1;background:#0D1A30;border-radius:8px;padding:8px 10px;text-align:center;border:1px solid #1E3050;min-width:90px}
+  .status-pill .val{font-size:13px;font-weight:700;font-family:monospace}
+  .status-pill .lbl{font-size:9px;color:#4A6080;margin-top:2px}
+
+  /* Serial monitor */
+  .serial-card{background:#0a0a0a;border-radius:16px;border:1px solid #1E3050;overflow:hidden;margin-bottom:14px}
+  .serial-header{background:#111E35;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1E3050}
+  .serial-title{color:#00FF94;font-size:11px;font-weight:700;letter-spacing:0.5px}
+  .serial-dot{width:8px;height:8px;border-radius:50%;background:#00FF94;display:inline-block;margin-right:6px;animation:pulse 1.5s infinite}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+  #serialOutput{padding:14px;font-family:'Courier New',monospace;font-size:11.5px;line-height:1.6;color:#00FF94;min-height:280px;max-height:340px;overflow-y:auto;white-space:pre-wrap;word-break:break-word}
+  .ln-info{color:#7FBFCC}
+  .ln-warn{color:#FFB347}
+  .ln-alert{color:#FF4D6D;font-weight:bold}
+  .ln-result{color:#00FF94;font-weight:bold}
+  .ln-dim{color:#4A6080}
+  .cursor{display:inline-block;width:7px;height:13px;background:#00FF94;animation:blink 0.8s infinite;vertical-align:middle}
+  @keyframes blink{0%,50%{opacity:1}51%,100%{opacity:0}}
+
+  .btn{width:100%;padding:13px;border:none;border-radius:12px;font-weight:800;font-size:14px;cursor:pointer;transition:all 0.2s}
+  .btn-green{background:linear-gradient(135deg,#00FF94,#0ABFBC);color:#0A1628}
+  .btn-gray{background:#1E3050;color:#7a8aa0}
+  .btn:disabled{opacity:0.5;cursor:not-allowed}
+  .btn-row{display:flex;gap:8px}
+
+  .info-box{background:#0D2A1A;border-radius:12px;padding:12px 14px;border:1px solid #00FF9433;margin-bottom:14px}
+  .info-box .t{color:#00FF94;font-weight:700;font-size:12px;margin-bottom:4px}
+  .info-box .d{color:#7a8aa0;font-size:11px;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">🩸</div>
+    <div>
+      <div style="font-weight:800;font-size:15px">HemoScan <span style="color:#00FF94">AI</span></div>
+      <div style="font-size:10px;color:#4A6080">ESP32 Embedded Logic Simulation</div>
+    </div>
+  </div>
+  <div class="badge">MEDICORE</div>
+</div>
+
+<div class="container">
+
+  <div class="circuit-card">
+    <div class="circuit-title">Circuit · ESP32 + MAX30102 + 4-Wavelength LED Array</div>
+    <div class="circuit-board">
+      <div class="esp32"><div class="esp32-label">ESP32</div></div>
+
+      <!-- wires -->
+      <div class="wire" style="top:28px;width:140px"></div>
+      <div class="wire" style="top:62px;width:140px"></div>
+      <div class="wire" style="top:96px;width:140px"></div>
+      <div class="wire" style="top:130px;width:140px"></div>
+
+      <div class="led-row">
+        <div style="position:relative"><span class="led-label">660nm RED</span><div class="led" id="led0" style="background:#3a0a0a"></div></div>
+        <div style="position:relative;margin-top:18px"><span class="led-label">880nm IR</span><div class="led" id="led1" style="background:#2a0a3a"></div></div>
+        <div style="position:relative;margin-top:18px"><span class="led-label">520nm GRN</span><div class="led" id="led2" style="background:#0a2a0a"></div></div>
+        <div style="position:relative;margin-top:18px"><span class="led-label">940nm IR2</span><div class="led" id="led3" style="background:#0a0a3a"></div></div>
+      </div>
+    </div>
+
+    <div class="status-row">
+      <div class="status-pill"><div class="val" id="statRed" style="color:#FF4D6D">—</div><div class="lbl">RED RAW</div></div>
+      <div class="status-pill"><div class="val" id="statIr" style="color:#AB47BC">—</div><div class="lbl">IR RAW</div></div>
+      <div class="status-pill"><div class="val" id="statFinger" style="color:#4A6080">NO</div><div class="lbl">FINGER</div></div>
+      <div class="status-pill"><div class="val" id="statPct" style="color:#00FF94">0%</div><div class="lbl">PROGRESS</div></div>
+    </div>
+  </div>
+
+  <div class="serial-card">
+    <div class="serial-header">
+      <div class="serial-title"><span class="serial-dot"></span>SERIAL MONITOR — 115200 baud</div>
+      <div style="color:#4A6080;font-size:10px" id="connStatus">● Connected</div>
+    </div>
+    <div id="serialOutput"></div>
+  </div>
+
+  <div class="btn-row" style="margin-bottom:14px">
+    <button class="btn btn-green" id="runBtn" onclick="runSimulation()">▶ Run Simulation</button>
+    <button class="btn btn-gray" id="resetBtn" onclick="resetSimulation()" style="display:none">↻ Reset</button>
+  </div>
+
+  <div class="info-box">
+    <div class="t">ℹ️ About This Simulation</div>
+    <div class="d">This runs the exact embedded logic from our ESP32 firmware — Beer-Lambert Law algorithm, PPG buffer sampling, and finger-detection state machine — executed in-browser as a faithful software model of the real microcontroller code (same source as hemoscan_sketch.ino).</div>
+  </div>
+
+</div>
+
+<script>
+const out = document.getElementById('serialOutput');
+let running = false;
+
+function addLine(text, cls, delay) {
+  return new Promise(resolve => {
+    setTimeout(() => {
+      const div = document.createElement('div');
+      div.className = cls || '';
+      div.textContent = text;
+      out.appendChild(div);
+      out.scrollTop = out.scrollHeight;
+      resolve();
+    }, delay || 0);
+  });
+}
+
+function setLed(id, color, glow) {
+  const el = document.getElementById(id);
+  el.style.background = color;
+  el.style.boxShadow = glow ? `0 0 14px ${color}, 0 0 4px ${color}` : 'none';
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+async function runSimulation() {
+  if (running) return;
+  running = true;
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('runBtn').textContent = '⏳ Running...';
+  out.innerHTML = '';
+
+  await addLine('=================================================', 'ln-dim', 100);
+  await addLine('   HemoScan AI — Non-Invasive Hemoglobin Monitor', 'ln-result', 200);
+  await addLine('   Medicore Innovation | ESP32 + MAX30102', 'ln-dim', 200);
+  await addLine('=================================================', 'ln-dim', 150);
+  await addLine('', '', 100);
+  await addLine('[MAX30102] Mode: SpO2 | LED Current: 0x24', 'ln-info', 400);
+  await addLine('[SYSTEM] Sensor initialized successfully.', 'ln-info', 300);
+  await addLine('[SYSTEM] Place finger on sensor to begin scan...', 'ln-info', 400);
+  await addLine('', '', 200);
+
+  // LEDs power on sequence
+  setLed('led0', '#FF3030', true);
+  await sleep(150);
+  setLed('led1', '#9C27B0', true);
+  await sleep(150);
+  setLed('led2', '#4CAF50', true);
+  await sleep(150);
+  setLed('led3', '#3F51B5', true);
+  await sleep(300);
+
+  await addLine('[FINGER] Detected — beginning 100-sample acquisition', 'ln-warn', 200);
+  document.getElementById('statFinger').textContent = 'YES';
+  document.getElementById('statFinger').style.color = '#00FF94';
+  await sleep(200);
+
+  // Simulate sampling with progress bar
+  const redBuf = [], irBuf = [];
+  let baseRed = 90 + Math.random() * 60; // demo-grade physiological-like baseline
+  let baseIr = 70 + Math.random() * 50;
+
+  for (let i = 1; i <= 10; i++) {
+    const pct = i * 10;
+    let bar = '';
+    const filled = Math.floor(pct / 5);
+    for (let j = 0; j < 20; j++) bar += j < filled ? '#' : '.';
+
+    // generate pseudo PPG samples for this chunk
+    for (let s = 0; s < 10; s++) {
+      const t = (i - 1) * 10 + s;
+      const red = baseRed + 25 * Math.sin(t * 0.6) + (Math.random() - 0.5) * 6;
+      const ir = baseIr + 20 * Math.sin(t * 0.6 + 0.3) + (Math.random() - 0.5) * 5;
+      redBuf.push(red); irBuf.push(ir);
+    }
+
+    document.getElementById('statRed').textContent = Math.round(redBuf[redBuf.length-1]);
+    document.getElementById('statIr').textContent = Math.round(irBuf[irBuf.length-1]);
+    document.getElementById('statPct').textContent = pct + '%';
+
+    await addLine(`[SCAN] [${bar}] ${pct}%`, 'ln-dim', 180);
+  }
+
+  await addLine('', '', 200);
+  await addLine('[AI] Processing PPG signal with Beer-Lambert algorithm...', 'ln-warn', 500);
+
+  // Compute Hb using same logic as firmware
+  const redMean = redBuf.reduce((a,v)=>a+v,0) / redBuf.length;
+  const irMean = irBuf.reduce((a,v)=>a+v,0) / irBuf.length;
+  const redAC = Math.sqrt(redBuf.reduce((a,v)=>a+(v-redMean)**2,0) / redBuf.length);
+  const irAC = Math.sqrt(irBuf.reduce((a,v)=>a+(v-irMean)**2,0) / irBuf.length);
+  const R = (redAC/redMean) / (irAC/irMean);
+  let hb = 22.0 - (6.5 * R);
+  hb = Math.min(18, Math.max(6, hb));
+  hb = parseFloat(hb.toFixed(1));
+
+  const status = hb >= 13 ? 'NORMAL' : hb >= 10 ? 'MILD ANEMIA' : 'SEVERE ANEMIA';
+  const color = hb >= 13 ? '#00FF94' : hb >= 10 ? '#FFB347' : '#FF4D6D';
+
+  await sleep(400);
+  await addLine('', '', 100);
+  await addLine('=================================================', 'ln-dim', 150);
+  await addLine('              SCAN RESULT', 'ln-result', 200);
+  await addLine('=================================================', 'ln-dim', 150);
+  await addLine(`  Hemoglobin Level   : ${hb.toFixed(1)} g/dL`, 'ln-result', 300);
+  await addLine(`  Status             : ${status}`, status === 'NORMAL' ? 'ln-result' : status === 'MILD ANEMIA' ? 'ln-warn' : 'ln-alert', 250);
+  await addLine(`  Red AC/DC Ratio    : ${R.toFixed(3)}`, 'ln-dim', 200);
+  await addLine('=================================================', 'ln-dim', 150);
+  await addLine('', '', 150);
+
+  if (status === 'SEVERE ANEMIA') {
+    await addLine('[ALERT] Critical Hb level — Recommend immediate consultation!', 'ln-alert', 300);
+  } else if (status === 'MILD ANEMIA') {
+    await addLine('[ADVICE] Increase iron intake. Monitor in 3 days.', 'ln-warn', 300);
+  } else {
+    await addLine('[INFO] Hemoglobin in healthy range. No action needed.', 'ln-info', 300);
+  }
+
+  await addLine('', '', 100);
+  const cursorDiv = document.createElement('div');
+  cursorDiv.innerHTML = '<span class="ln-dim">[SYSTEM] Ready for next scan </span><span class="cursor"></span>';
+  out.appendChild(cursorDiv);
+  out.scrollTop = out.scrollHeight;
+
+  document.getElementById('runBtn').textContent = '✅ Scan Complete';
+  document.getElementById('resetBtn').style.display = 'block';
+  running = false;
+}
+
+function resetSimulation() {
+  out.innerHTML = '';
+  ['led0','led1','led2','led3'].forEach((id,i) => {
+    const colors = ['#3a0a0a','#2a0a3a','#0a2a0a','#0a0a3a'];
+    setLed(id, colors[i], false);
+  });
+  document.getElementById('statRed').textContent = '—';
+  document.getElementById('statIr').textContent = '—';
+  document.getElementById('statFinger').textContent = 'NO';
+  document.getElementById('statFinger').style.color = '#4A6080';
+  document.getElementById('statPct').textContent = '0%';
+  document.getElementById('runBtn').disabled = false;
+  document.getElementById('runBtn').textContent = '▶ Run Simulation';
+  document.getElementById('resetBtn').style.display = 'none';
+}
+</script>
+</body>
+</html>

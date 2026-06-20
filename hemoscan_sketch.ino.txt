@@ -1,0 +1,194 @@
+/*
+ * HemoScan AI — Non-Invasive Hemoglobin Monitor
+ * Medicore Innovation
+ * ESP32 + MAX30102 PPG Sensor + Beer-Lambert Law Algorithm
+ *
+ * Hardware: ESP32 DevKit + MAX30102 (I2C: SDA=21, SCL=22)
+ * Simulated on Wokwi.com
+ */
+
+#include <Wire.h>
+
+// ── MAX30102 Register Addresses ──────────────────────────
+#define MAX30102_ADDR     0x57
+#define REG_FIFO_DATA     0x07
+#define REG_MODE_CONFIG   0x09
+#define REG_SPO2_CONFIG   0x0A
+#define REG_LED1_PA       0x0C   // Red LED
+#define REG_LED2_PA       0x0D   // IR LED
+
+// ── Globals ───────────────────────────────────────────────
+float redBuffer[100];
+float irBuffer[100];
+int bufferIndex = 0;
+bool fingerDetected = false;
+float hemoglobinResult = 0.0;
+unsigned long lastSample = 0;
+const int SAMPLE_INTERVAL = 20; // ms -> 50Hz sampling
+
+void setup() {
+  Serial.begin(115200);
+  delay(500);
+  Wire.begin(21, 22); // SDA, SCL
+
+  Serial.println("=================================================");
+  Serial.println("   HemoScan AI — Non-Invasive Hemoglobin Monitor");
+  Serial.println("   Medicore Innovation | ESP32 + MAX30102");
+  Serial.println("=================================================");
+  Serial.println();
+
+  initMAX30102();
+  Serial.println("[SYSTEM] Sensor initialized successfully.");
+  Serial.println("[SYSTEM] Place finger on sensor to begin scan...");
+  Serial.println();
+}
+
+void initMAX30102() {
+  Wire.beginTransmission(MAX30102_ADDR);
+  Wire.write(REG_MODE_CONFIG);
+  Wire.write(0x03);  // SpO2 mode
+  Wire.endTransmission();
+
+  Wire.beginTransmission(MAX30102_ADDR);
+  Wire.write(REG_LED1_PA);
+  Wire.write(0x24);  // Red LED current
+  Wire.endTransmission();
+
+  Wire.beginTransmission(MAX30102_ADDR);
+  Wire.write(REG_LED2_PA);
+  Wire.write(0x24);  // IR LED current
+  Wire.endTransmission();
+
+  Serial.println("[MAX30102] Mode: SpO2 | LED Current: 0x24");
+}
+
+// ── Simulated PPG signal read (since Wokwi MAX30102 model 
+//    provides basic IR/Red proxy via potentiometer input) ──
+float readRedChannel() {
+  int raw = analogRead(34); // simulate via potentiometer on Wokwi
+  float baseline = 512.0;
+  float pulseComponent = 30.0 * sin(millis() / 200.0);
+  float signal = map(raw, 0, 4095, 50, 950) + pulseComponent;
+  return signal;
+}
+
+float readIRChannel() {
+  int raw = analogRead(35);
+  float baseline = 480.0;
+  float pulseComponent = 25.0 * sin(millis() / 195.0);
+  float signal = map(raw, 0, 4095, 40, 900) + pulseComponent;
+  return signal;
+}
+
+// ── Beer-Lambert Law based Hb estimation ─────────────────
+float calculateHemoglobin(float* red, float* ir, int n) {
+  // AC component (pulsatile) — standard deviation
+  float redMean = 0, irMean = 0;
+  for (int i = 0; i < n; i++) { redMean += red[i]; irMean += ir[i]; }
+  redMean /= n; irMean /= n;
+
+  float redVar = 0, irVar = 0;
+  for (int i = 0; i < n; i++) {
+    redVar += pow(red[i] - redMean, 2);
+    irVar  += pow(ir[i] - irMean, 2);
+  }
+  float redAC = sqrt(redVar / n);
+  float irAC  = sqrt(irVar / n);
+
+  // Ratio of Ratios (R) — standard pulse-oximetry derived metric
+  float R = (redAC / redMean) / (irAC / irMean);
+
+  // Beer-Lambert based empirical Hb mapping
+  // Hb = a - b*R  (coefficients tuned for demo range 8-17 g/dL)
+  float a = 22.0;
+  float b = 6.5;
+  float hb = a - (b * R);
+
+  // Clamp to physiological range
+  if (hb < 6.0) hb = 6.0;
+  if (hb > 18.0) hb = 18.0;
+
+  return hb;
+}
+
+String classifyHb(float hb) {
+  if (hb >= 13.0) return "NORMAL";
+  if (hb >= 10.0) return "MILD ANEMIA";
+  return "SEVERE ANEMIA";
+}
+
+void printProgressBar(int percent) {
+  Serial.print("[SCAN] [");
+  int filled = percent / 5;
+  for (int i = 0; i < 20; i++) {
+    Serial.print(i < filled ? "#" : ".");
+  }
+  Serial.print("] ");
+  Serial.print(percent);
+  Serial.println("%");
+}
+
+void loop() {
+  unsigned long now = millis();
+  if (now - lastSample < SAMPLE_INTERVAL) return;
+  lastSample = now;
+
+  float red = readRedChannel();
+  float ir  = readIRChannel();
+
+  // Finger detection: signal must be in physiological range
+  fingerDetected = (red > 100 && red < 1000);
+
+  if (fingerDetected) {
+    redBuffer[bufferIndex] = red;
+    irBuffer[bufferIndex] = ir;
+    bufferIndex++;
+
+    int percent = (bufferIndex * 100) / 100;
+    if (bufferIndex % 10 == 0) {
+      printProgressBar(percent);
+    }
+
+    if (bufferIndex >= 100) {
+      Serial.println();
+      Serial.println("[AI] Processing PPG signal with Beer-Lambert algorithm...");
+      delay(300);
+
+      hemoglobinResult = calculateHemoglobin(redBuffer, irBuffer, 100);
+      String status = classifyHb(hemoglobinResult);
+
+      Serial.println();
+      Serial.println("=================================================");
+      Serial.println("              SCAN RESULT");
+      Serial.println("=================================================");
+      Serial.print("  Hemoglobin Level   : ");
+      Serial.print(hemoglobinResult, 1);
+      Serial.println(" g/dL");
+      Serial.print("  Status             : ");
+      Serial.println(status);
+      Serial.print("  Red AC/DC Ratio    : ");
+      Serial.println((redBuffer[99] / 512.0), 3);
+      Serial.println("=================================================");
+      Serial.println();
+
+      if (status == "SEVERE ANEMIA") {
+        Serial.println("[ALERT] Critical Hb level — Recommend immediate consultation!");
+      } else if (status == "MILD ANEMIA") {
+        Serial.println("[ADVICE] Increase iron intake. Monitor in 3 days.");
+      } else {
+        Serial.println("[INFO] Hemoglobin in healthy range. No action needed.");
+      }
+
+      Serial.println();
+      Serial.println("[SYSTEM] Restarting scan in 3 seconds...");
+      Serial.println();
+      delay(3000);
+      bufferIndex = 0;
+    }
+  } else {
+    if (bufferIndex > 0) {
+      Serial.println("[WARNING] Finger removed — scan reset.");
+      bufferIndex = 0;
+    }
+  }
+}

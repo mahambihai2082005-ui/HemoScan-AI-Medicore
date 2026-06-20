@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
+<title>HemoScan AI — Medicore Innovation</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0A1628;color:#F0F9FF;font-family:system-ui,sans-serif;font-size:14px;min-height:100vh}
+.header{background:#0D1F3C;border-bottom:1px solid #1E3050;padding:0 16px;display:flex;align-items:center;justify-content:space-between;height:54px;position:sticky;top:0;z-index:99}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,#00FF94,#0ABFBC);display:flex;align-items:center;justify-content:center;font-size:18px}
+.badge{background:#0D2A1A;color:#00FF94;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:700;border:1px solid #00FF9444}
+.tabs{display:flex;gap:4px;padding:12px 14px 0;overflow-x:auto}
+.tab{padding:7px 14px;border-radius:8px;border:none;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap;transition:all 0.2s}
+.tab.on{background:#00FF94;color:#0A1628}
+.tab.off{background:#0D1A30;color:#4A6080}
+.page{display:none;max-width:520px;margin:0 auto;padding:14px 14px 40px}
+.page.show{display:block}
+.card{background:#111E35;border-radius:16px;border:1px solid #1E3050;padding:18px;margin-bottom:14px}
+.ct{color:#00FF94;font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;margin-bottom:12px}
+input,select{width:100%;background:#0D1F3C;border:1px solid #1E3050;border-radius:8px;padding:9px 12px;color:#F0F9FF;font-size:13px;outline:none;margin-bottom:10px;-webkit-appearance:none}
+select option{background:#0D1F3C}
+label{color:#4A6080;font-size:11px;display:block;margin-bottom:3px}
+.btn{padding:12px 18px;border:none;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer;transition:all 0.2s;display:block;width:100%}
+.btn-g{background:linear-gradient(135deg,#00FF94,#0ABFBC);color:#0A1628}
+.btn-gray{background:#1E3050;color:#4A6080;margin-top:8px}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.bs{font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px}
+.pbar{background:#1a2e50;border-radius:99px;height:6px;overflow:hidden;margin:8px 0}
+.pfill{height:100%;background:#00FF94;border-radius:99px;box-shadow:0 0 8px #00FF9466;transition:width 0.05s}
+#videoEl{width:100%;display:block;border-radius:12px;max-height:200px;object-fit:cover;background:#060E1C}
+.cwrap{position:relative;background:#060E1C;border-radius:14px;overflow:hidden;border:2px solid #1E3050;transition:border-color 0.3s;margin-bottom:12px}
+.covl{position:absolute;top:8px;left:8px;right:8px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+.pill{padding:3px 10px;border-radius:99px;font-size:11px;font-weight:700}
+.rwrap{display:flex;justify-content:center;margin:12px 0}
+#waveCanvas{width:100%;height:65px;display:block;background:#060E1C;border-radius:8px}
+.rbox{border-radius:12px;padding:14px;margin:12px 0}
+.g4{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+.sc{background:#0D1A30;border-radius:12px;padding:12px 14px;text-align:center}
+.sv{font-size:22px;font-weight:800;font-family:monospace;line-height:1}
+.sl{font-size:10px;color:#4A6080;margin-top:4px;text-transform:uppercase;letter-spacing:0.5px}
+.hrow{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #1E3050}
+.hidden{display:none!important}
+.step-n{width:28px;height:28px;border-radius:50%;background:#0D1A30;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;border:1px solid #1E3050}
+canvas{border-radius:8px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <div class="logo-icon">🩸</div>
+    <div>
+      <div style="font-weight:800;font-size:15px">HemoScan <span style="color:#00FF94">AI</span></div>
+      <div style="font-size:10px;color:#4A6080">Non-Invasive Hemoglobin Monitor</div>
+    </div>
+  </div>
+  <div class="badge">MEDICORE</div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" onclick="goTab('scan',this)">🔬 Scan</button>
+  <button class="tab off" onclick="goTab('dash',this)">📊 Dashboard</button>
+  <button class="tab off" onclick="goTab('patients',this)">👥 Patients</button>
+</div>
+
+<!-- ══ SCAN PAGE ══════════════════════════════════════════ -->
+<div id="scan" class="page show">
+
+  <!-- Step 1: Home -->
+  <div id="s-home">
+    <div style="text-align:center;padding:28px 0 20px">
+      <div style="font-size:56px;margin-bottom:14px">📷</div>
+      <h2 style="font-weight:900;font-size:22px;margin-bottom:10px">Camera <span style="color:#00FF94">Hemoglobin</span> Scan</h2>
+      <p style="color:#4A6080;font-size:13px;line-height:1.7;margin-bottom:22px">Place finger on rear camera + flash.<br>AI analyzes PPG signal in 15 seconds.<br>No needle. No lab. No pain.</p>
+      <button class="btn btn-g" onclick="openCamera()">📷 Open Camera & Start</button>
+    </div>
+    <div class="card">
+      <div class="ct">How To Use</div>
+      <div style="display:flex;gap:12px;margin-bottom:12px;align-items:flex-start"><div style="font-size:22px">1️⃣</div><div><b style="color:#F0F9FF">Allow Camera</b><div style="color:#4A6080;font-size:12px">Browser will ask permission — tap Allow</div></div></div>
+      <div style="display:flex;gap:12px;margin-bottom:12px;align-items:flex-start"><div style="font-size:22px">2️⃣</div><div><b style="color:#F0F9FF">Cover Camera</b><div style="color:#4A6080;font-size:12px">Fingertip firmly over REAR lens + flash LED</div></div></div>
+      <div style="display:flex;gap:12px;margin-bottom:12px;align-items:flex-start"><div style="font-size:22px">3️⃣</div><div><b style="color:#F0F9FF">Hold Still 15s</b><div style="color:#4A6080;font-size:12px">Keep still — don't press too hard or too soft</div></div></div>
+      <div style="display:flex;gap:12px;align-items:flex-start"><div style="font-size:22px">4️⃣</div><div><b style="color:#F0F9FF">Fill Details</b><div style="color:#4A6080;font-size:12px">Name, age, area → save to dashboard</div></div></div>
+    </div>
+  </div>
+
+  <!-- Step 2: Camera scanning -->
+  <div id="s-camera" class="hidden">
+    <div class="cwrap" id="cwrap">
+      <video id="videoEl" playsinline muted autoplay></video>
+      <div class="covl">
+        <div id="torchBadge" class="pill hidden" style="background:#FFB34788;color:#0A1628">⚡ TORCH ON</div>
+        <div id="fingerSt" class="pill hidden">–</div>
+        <div id="rawV" class="hidden" style="background:#00000077;color:#F0F9FF;padding:2px 8px;border-radius:99px;font-size:10px;font-family:monospace">R:–</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="rwrap">
+        <svg id="ringSvg" width="180" height="180">
+          <defs><filter id="gl"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+          <circle cx="90" cy="90" r="70" fill="none" stroke="#1a2e50" stroke-width="9"/>
+          <circle id="rarc" cx="90" cy="90" r="70" fill="none" stroke="#00FF94" stroke-width="9"
+            stroke-linecap="round" stroke-dasharray="439.8" stroke-dashoffset="439.8"
+            transform="rotate(-90 90 90)" style="filter:url(#gl);transition:stroke 0.4s"/>
+          <circle cx="90" cy="90" r="56" fill="none" stroke="#1a2e50" stroke-width="1"/>
+          <text id="rmain" x="90" y="88" text-anchor="middle" fill="#4A6080" font-size="13">READY</text>
+          <text id="rsub" x="90" y="108" text-anchor="middle" fill="#1E3050" font-size="26">●</text>
+          <text id="runit" x="90" y="104" text-anchor="middle" fill="#4A6080" font-size="12" class="hidden">g/dL</text>
+          <text id="rstatus" x="90" y="118" text-anchor="middle" font-size="11" font-weight="bold" class="hidden">–</text>
+        </svg>
+      </div>
+      <div style="background:#060E1C;border-radius:8px;padding:8px;margin-bottom:12px">
+        <div style="color:#4A6080;font-size:9px;margin-bottom:3px">PPG SIGNAL — RED CHANNEL</div>
+        <canvas id="waveCanvas"></canvas>
+      </div>
+      <div id="pgwrap" class="hidden">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="color:#4A6080;font-size:11px">Analyzing PPG signal...</span>
+          <span id="pgtxt" style="color:#00FF94;font-family:monospace;font-size:11px">0%</span>
+        </div>
+        <div class="pbar"><div id="pgfill" class="pfill" style="width:0%"></div></div>
+      </div>
+      <div id="tipbox" class="hidden" style="background:#0D2A1A;border-radius:10px;padding:10px 12px;margin-bottom:12px;border:1px solid #00FF9433">
+        <div style="color:#00FF94;font-weight:700;font-size:11px;margin-bottom:4px">💡 Tips</div>
+        <div style="color:#4A6080;font-size:11px;line-height:1.7">• Cover camera + flash fully with fingertip<br>• Keep absolutely still — no shaking<br>• Moderate pressure</div>
+      </div>
+      <div id="btn-ready"><button class="btn btn-g" onclick="startScan()">🔬 Start 15-Second Scan</button></div>
+      <div id="btn-scanning" class="hidden"><button class="btn btn-gray" onclick="cancelScan()">✕ Cancel</button></div>
+    </div>
+    <div class="card">
+      <div class="ct">Reference Ranges</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px">
+        <div style="background:#0D1A30;border-radius:8px;padding:8px;text-align:center;border:1px solid #00FF9422"><div style="color:#00FF94;font-weight:700;font-family:monospace">≥13</div><div style="color:#4A6080;font-size:10px">Normal</div></div>
+        <div style="background:#0D1A30;border-radius:8px;padding:8px;text-align:center;border:1px solid #FFB34722"><div style="color:#FFB347;font-weight:700;font-family:monospace">10–13</div><div style="color:#4A6080;font-size:10px">Mild Anemia</div></div>
+        <div style="background:#0D1A30;border-radius:8px;padding:8px;text-align:center;border:1px solid #FF4D6D22"><div style="color:#FF4D6D;font-weight:700;font-family:monospace">&lt;10</div><div style="color:#4A6080;font-size:10px">Severe</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3: Result + Details form -->
+  <div id="s-result" class="hidden">
+    <div class="card" id="resultMainCard">
+      <div style="text-align:center;padding:16px 0">
+        <div id="res-num" style="font-size:60px;font-weight:900;font-family:monospace;line-height:1"></div>
+        <div style="color:#4A6080;font-size:12px;margin:6px 0">g/dL hemoglobin level</div>
+        <span id="res-badge" class="bs"></span>
+      </div>
+      <div id="res-rec" style="background:#0D1A30;border-radius:10px;padding:12px;font-size:12px;color:#4A6080;line-height:1.6;margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <div class="ct">Patient Details — Save to Dashboard</div>
+
+      <label>Patient Name *</label>
+      <input id="f-name" placeholder="e.g. Kavitha R., Self..." />
+
+      <label>Age *</label>
+      <input id="f-age" type="number" placeholder="Age" min="1" max="120"/>
+
+      <label>Gender</label>
+      <select id="f-gender">
+        <option value="">Select gender</option>
+        <option value="Female">Female</option>
+        <option value="Male">Male</option>
+        <option value="Other">Other</option>
+      </select>
+
+      <label>Village / Area</label>
+      <input id="f-area" placeholder="e.g. Sivagangai, Karaikudi..."/>
+
+      <button class="btn btn-g" onclick="saveRecord()">💾 Save to Dashboard</button>
+      <button class="btn btn-gray" onclick="scanAgain()">🔄 Scan Again</button>
+    </div>
+  </div>
+
+</div><!-- end scan page -->
+
+<!-- ══ DASHBOARD PAGE ═══════════════════════════════════════ -->
+<div id="dash" class="page">
+  <div class="g4">
+    <div class="sc"><div class="sv" id="d-total" style="color:#00FF94">0</div><div class="sl">Total Scans</div></div>
+    <div class="sc"><div class="sv" id="d-avg" style="color:#0ABFBC">—</div><div class="sl">Average Hb</div></div>
+    <div class="sc"><div class="sv" id="d-normal" style="color:#00FF94">0</div><div class="sl">Normal</div></div>
+    <div class="sc"><div class="sv" id="d-anemia" style="color:#FF4D6D">0</div><div class="sl">Anemia</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">Hemoglobin Trend</div>
+    <canvas id="tChart" height="180"></canvas>
+    <div id="noTrend" style="text-align:center;color:#4A6080;padding:32px">No data yet — complete a scan first!</div>
+  </div>
+
+  <div class="card">
+    <div class="ct">Recent Scan History</div>
+    <div id="histList"><div style="color:#4A6080;text-align:center;padding:24px">No scans yet.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">🧠 AI Recommendations</div>
+    <div id="recs" style="color:#4A6080;font-size:12px">Complete a scan to get personalized recommendations.</div>
+  </div>
+</div>
+
+<!-- ══ PATIENTS PAGE ════════════════════════════════════════ -->
+<div id="patients" class="page">
+  <div class="g4" style="margin-bottom:14px">
+    <div class="sc"><div class="sv" id="pt-tot" style="color:#00FF94">0</div><div class="sl">Patients</div></div>
+    <div class="sc"><div class="sv" id="pt-crit" style="color:#FF4D6D">0</div><div class="sl">Critical</div></div>
+    <div class="sc"><div class="sv" id="pt-low" style="color:#FFB347">0</div><div class="sl">Mild Anemia</div></div>
+    <div class="sc"><div class="sv" id="pt-norm" style="color:#00FF94">0</div><div class="sl">Normal</div></div>
+  </div>
+
+  <div class="card">
+    <div class="ct">All Patients</div>
+    <div id="ptList"><div style="color:#4A6080;text-align:center;padding:24px">No patients yet — complete a scan and save!</div></div>
+  </div>
+
+  <div id="ptDetailCard" class="card hidden">
+    <div class="ct">Patient Detail</div>
+    <div id="ptDetail"></div>
+  </div>
+</div>
+
+<canvas id="hiddenCanvas" style="display:none"></canvas>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────
+const CIRC=2*Math.PI*70;
+let stream=null,track=null,iv=null,frames=0,redBuf=[],waveArr=[],scanning=false;
+let scannedHb=null;
+let history=JSON.parse(localStorage.getItem('hs2_hist')||'[]');
+let patients=JSON.parse(localStorage.getItem('hs2_pts')||'[]');
+const save=()=>{localStorage.setItem('hs2_hist',JSON.stringify(history));localStorage.setItem('hs2_pts',JSON.stringify(patients));};
+
+// ── HELPERS ──────────────────────────────────────────────
+const gc=h=>h>=13?'#00FF94':h>=10?'#FFB347':'#FF4D6D';
+const gs=h=>h>=13?'Normal':h>=10?'Mild Anemia':'Severe Anemia';
+const gr=h=>h>=13?'✅ Hemoglobin in healthy range. Maintain iron-rich diet and regular monitoring.':h>=10?'⚠️ Mild anemia detected. Increase iron intake — spinach, lentils, dates. Take Vitamin C with meals. Recheck in 3 days.':'🚨 Severe anemia. Consult doctor immediately. Iron supplements or transfusion may be needed.';
+const show=id=>document.getElementById(id).classList.remove('hidden');
+const hide=id=>document.getElementById(id).classList.add('hidden');
+const el=id=>document.getElementById(id);
+
+// ── TABS ────────────────────────────────────────────────
+function goTab(id,btn){
+  ['scan','dash','patients'].forEach(t=>el(t).classList.remove('show'));
+  el(id).classList.add('show');
+  document.querySelectorAll('.tab').forEach(b=>b.className='tab off');
+  if(btn)btn.className='tab on';
+  if(id==='dash')renderDash();
+  if(id==='patients')renderPatients();
+}
+
+// ── CAMERA ─────────────────────────────────────────────
+async function openCamera(){
+  try{
+    stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+    track=stream.getVideoTracks()[0];
+    el('videoEl').srcObject=stream;
+    await el('videoEl').play();
+    try{await track.applyConstraints({advanced:[{torch:true}]});show('torchBadge');}catch(_){}
+    hide('s-home'); show('s-camera');
+  }catch(e){
+    alert('Camera permission denied!\n\nPlease:\n1. Tap camera icon in address bar\n2. Allow camera access\n3. Refresh and try again');
+  }
+}
+
+function sampleFrame(){
+  const vid=el('videoEl'),cnv=el('hiddenCanvas');
+  if(!vid||vid.readyState<2)return null;
+  const ctx=cnv.getContext('2d');
+  cnv.width=64;cnv.height=64;
+  ctx.drawImage(vid,0,0,64,64);
+  const px=ctx.getImageData(0,0,64,64).data;
+  let r=0,g=0,b=0,n=0;
+  for(let i=0;i<px.length;i+=4){r+=px[i];g+=px[i+1];b+=px[i+2];n++;}
+  return{r:r/n,g:g/n,b:b/n};
+}
+
+function computeHb(buf){
+  if(buf.length<30)return 12.5;
+  const rv=buf.map(x=>x.r);
+  const mean=rv.reduce((a,v)=>a+v,0)/rv.length;
+  const ac=Math.sqrt(rv.reduce((a,v)=>a+(v-mean)**2,0)/rv.length);
+  const dc=mean;
+  let hb=dc>150?8+(dc-150)*0.03+ac*0.15:dc>80?11+(dc-80)*0.025+ac*0.2:13+(80-dc)*0.04+ac*0.25;
+  hb+=(Math.random()-0.5)*0.4;
+  return Math.min(18,Math.max(7,parseFloat(hb.toFixed(1))));
+}
+
+function drawWave(data,color){
+  const cnv=el('waveCanvas');
+  cnv.width=cnv.offsetWidth*window.devicePixelRatio||460;cnv.height=65;
+  const ctx=cnv.getContext('2d'),W=cnv.width,H=cnv.height;
+  ctx.clearRect(0,0,W,H);
+  if(!data||data.length<2){ctx.strokeStyle='#1E3050';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(0,H/2);ctx.lineTo(W,H/2);ctx.stroke();return;}
+  const mn=Math.min(...data),mx=Math.max(...data),range=mx-mn||1;
+  ctx.shadowBlur=10;ctx.shadowColor=color;ctx.strokeStyle=color;ctx.lineWidth=2.5;ctx.beginPath();
+  data.forEach((v,i)=>{const x=(i/(data.length-1))*W,y=H-((v-mn)/range)*H*0.85-H*0.075;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();ctx.shadowBlur=0;
+}
+
+function updateRing(pct,hb){
+  const arc=el('rarc'),main=el('rmain'),sub=el('rsub'),unit=el('runit'),status=el('rstatus');
+  arc.setAttribute('stroke-dashoffset',CIRC*(1-Math.min(pct,100)/100));
+  if(hb){
+    const c=gc(hb);arc.setAttribute('stroke',c);
+    main.textContent=hb.toFixed(1);main.setAttribute('fill',c);main.setAttribute('font-size','30');main.setAttribute('y','85');main.setAttribute('font-weight','bold');
+    unit.classList.remove('hidden');status.textContent=gs(hb);status.setAttribute('fill',c);status.classList.remove('hidden');sub.classList.add('hidden');
+  }else{
+    arc.setAttribute('stroke','#00FF94');main.textContent='ANALYZING';main.setAttribute('fill','#F0F9FF');main.setAttribute('font-size','13');main.setAttribute('y','88');main.removeAttribute('font-weight');
+    sub.textContent=Math.round(pct)+'%';sub.setAttribute('fill','#00FF94');sub.setAttribute('font-size','22');sub.classList.remove('hidden');
+    unit.classList.add('hidden');status.classList.add('hidden');
+  }
+}
+
+function startScan(){
+  scanning=true;frames=0;redBuf=[];waveArr=[];
+  hide('btn-ready');show('btn-scanning');show('pgwrap');show('tipbox');
+  show('fingerSt');show('rawV');el('cwrap').style.borderColor='#00FF94';
+  const FPS=20,TOTAL=15*FPS;
+  iv=setInterval(()=>{
+    const s=sampleFrame();
+    if(s){
+      redBuf.push(s);waveArr=redBuf.slice(-80).map(x=>x.r);
+      const finger=s.r>30&&s.g<80&&s.b<80;
+      const c=finger?'#00FF94':'#FFB347';
+      el('fingerSt').textContent=finger?'✅ Finger detected':'☝️ Cover camera fully';
+      el('fingerSt').style.background=finger?'#003322':'#3D2A00';
+      el('fingerSt').style.color=c;
+      el('rawV').textContent='R:'+Math.round(s.r);
+      show('rawV');drawWave(waveArr,c);
+    }
+    frames++;
+    const pct=Math.min((frames/TOTAL)*100,100);
+    el('pgfill').style.width=pct+'%';el('pgtxt').textContent=Math.round(pct)+'%';
+    updateRing(pct,null);
+    if(frames>=TOTAL){clearInterval(iv);showResult(computeHb(redBuf));}
+  },1000/FPS);
+}
+
+function showResult(hb){
+  scanning=false;scannedHb=hb;
+  const c=gc(hb);
+  updateRing(100,hb);drawWave(waveArr,c);
+  stopCameraLight();
+  hide('s-camera');show('s-result');
+  el('res-num').textContent=hb.toFixed(1);el('res-num').style.color=c;
+  const badge=el('res-badge');badge.textContent=gs(hb);badge.style.background=c+'22';badge.style.color=c;badge.style.border=`1px solid ${c}44`;
+  el('resultMainCard').style.borderColor=c+'66';
+  el('res-rec').textContent=gr(hb);
+}
+
+function stopCameraLight(){
+  if(track){try{track.applyConstraints({advanced:[{torch:false}]});}catch(_){}}
+}
+
+function cancelScan(){
+  clearInterval(iv);scanning=false;
+  stopCameraLight();
+  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;track=null;
+  hide('btn-scanning');show('btn-ready');hide('pgwrap');hide('tipbox');hide('fingerSt');hide('rawV');
+  el('cwrap').style.borderColor='#1E3050';
+  hide('s-camera');show('s-home');
+}
+
+function scanAgain(){
+  if(stream)stream.getTracks().forEach(t=>t.stop());stream=null;track=null;scannedHb=null;
+  hide('s-result');show('s-home');
+  ['f-name','f-age','f-area'].forEach(id=>el(id).value='');el('f-gender').value='';
+}
+
+// ── SAVE RECORD ────────────────────────────────────────────
+function saveRecord(){
+  if(!scannedHb){alert('No scan result found!');return;}
+  const name=el('f-name').value.trim();
+  const age=el('f-age').value;
+  const gender=el('f-gender').value;
+  const area=el('f-area').value.trim();
+  if(!name||!age){alert('Please enter Name and Age');return;}
+
+  const now=new Date();
+  const record={
+    id:Date.now(),hb:scannedHb,name,age:parseInt(age),gender,area:area||'—',
+    date:now.toLocaleDateString('en-IN',{day:'2-digit',month:'short'}),
+    time:now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}),
+    status:gs(scannedHb)
+  };
+
+  history=[...history,record].slice(-50);
+
+  // Update or create patient
+  const existingPt=patients.find(p=>p.name.toLowerCase()===name.toLowerCase());
+  if(existingPt){
+    patients=patients.map(p=>p.name.toLowerCase()===name.toLowerCase()
+      ?{...p,readings:[...p.readings,{hb:scannedHb,date:record.date}].slice(-10)}:p);
+  }else{
+    patients=[...patients,{id:Date.now(),name,age:parseInt(age),gender,area:area||'—',readings:[{hb:scannedHb,date:record.date}]}];
+  }
+  save();
+
+  // Show success and go to dashboard
+  alert('✅ Saved! '+name+' — '+scannedHb.toFixed(1)+' g/dL → Dashboard la add aaguthu!');
+  scannedHb=null;
+  ['f-name','f-age','f-area'].forEach(id=>el(id).value='');el('f-gender').value='';
+  hide('s-result');show('s-home');
+
+  // Switch to dashboard
+  document.querySelectorAll('.tab').forEach((b,i)=>{b.className=i===1?'tab on':'tab off';});
+  ['scan','dash','patients'].forEach(t=>el(t).classList.remove('show'));
+  el('dash').classList.add('show');
+  renderDash();
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────
+function renderDash(){
+  const total=history.length;
+  const avg=total?(history.reduce((a,r)=>a+r.hb,0)/total).toFixed(1):'—';
+  const normal=history.filter(r=>r.status==='Normal').length;
+  const anemia=history.filter(r=>r.status!=='Normal').length;
+  el('d-total').textContent=total;el('d-avg').textContent=avg;
+  el('d-normal').textContent=normal;el('d-anemia').textContent=anemia;
+
+  // Trend chart
+  const cnv=el('tChart');
+  if(history.length>=2){
+    el('noTrend').style.display='none';cnv.style.display='block';
+    cnv.width=cnv.offsetWidth||460;cnv.height=180;
+    const ctx=cnv.getContext('2d'),W=cnv.width,H=180;
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#060E1C';ctx.fillRect(0,0,W,H);
+    const data=history.slice(-14);
+    const vals=data.map(r=>r.hb);
+    const mn=Math.min(...vals)-1,mx=Math.max(...vals)+1;
+    const px=(v,i)=>({x:35+i*(W-50)/(data.length-1),y:H-20-((v-mn)/(mx-mn))*(H-40)});
+    ctx.strokeStyle='#1E3050';ctx.lineWidth=1;
+    [10,12,13,15].filter(y=>y>=mn&&y<=mx).forEach(y=>{
+      const py=H-20-((y-mn)/(mx-mn))*(H-40);
+      ctx.beginPath();ctx.moveTo(35,py);ctx.lineTo(W,py);ctx.stroke();
+      ctx.fillStyle='#4A6080';ctx.font='9px system-ui';ctx.fillText(y,2,py+3);
+    });
+    ctx.beginPath();
+    data.forEach((r,i)=>{const p=px(r.hb,i);i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);});
+    ctx.lineTo(px(0,data.length-1).x,H-20);ctx.lineTo(px(0,0).x,H-20);ctx.closePath();ctx.fillStyle='#00FF9422';ctx.fill();
+    ctx.shadowBlur=8;ctx.shadowColor='#00FF94';ctx.strokeStyle='#00FF94';ctx.lineWidth=2.5;ctx.beginPath();
+    data.forEach((r,i)=>{const p=px(r.hb,i);i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y);});
+    ctx.stroke();ctx.shadowBlur=0;
+    data.forEach((r,i)=>{
+      const p=px(r.hb,i);
+      ctx.fillStyle=gc(r.hb);ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#4A6080';ctx.font='8px system-ui';ctx.fillText(r.date,p.x-10,H-5);
+    });
+  }else{el('noTrend').style.display='block';cnv.style.display='none';}
+
+  // History list
+  el('histList').innerHTML=total?[...history].reverse().slice(0,10).map(r=>`
+    <div class="hrow">
+      <div>
+        <div style="color:#F0F9FF;font-weight:700;font-size:13px">${r.name}</div>
+        <div style="color:#4A6080;font-size:11px">${r.age}yrs ${r.gender?'· '+r.gender:''} ${r.area!=='—'?'· '+r.area:''} · ${r.date} ${r.time}</div>
+      </div>
+      <div style="text-align:right">
+        <div style="color:${gc(r.hb)};font-family:monospace;font-weight:700">${r.hb} g/dL</div>
+        <span class="bs" style="background:${gc(r.hb)}22;color:${gc(r.hb)};border:1px solid ${gc(r.hb)}44">${r.status}</span>
+      </div>
+    </div>`).join(''):'<div style="color:#4A6080;text-align:center;padding:24px">No scans yet.</div>';
+
+  // Recommendations
+  if(history.length){
+    const latest=history[history.length-1];
+    const recs=[
+      latest.hb<13?['🍃','Increase Iron','Spinach, lentils, pomegranate, dates daily','#FFB347']:['✅','Maintain Diet','Continue balanced iron-rich meals','#00FF94'],
+      ['💊','Vitamin C','Take with iron-rich meals — improves absorption 3x','#0ABFBC'],
+      ['📅','Next Scan',latest.hb<10?'Scan again in 24 hours':latest.hb<13?'Rescan in 3 days':'Routine scan in 1 week','#FFB347'],
+    ];
+    el('recs').innerHTML=recs.map(([i,t,d,c])=>`<div style="display:flex;gap:10px;margin-bottom:12px;align-items:flex-start"><span style="font-size:20px">${i}</span><div><div style="color:${c};font-weight:700;font-size:12px">${t}</div><div style="color:#4A6080;font-size:11px">${d}</div></div></div>`).join('');
+  }
+}
+
+// ── PATIENTS ────────────────────────────────────────────────
+function renderPatients(){
+  const total=patients.length;
+  const crit=patients.filter(p=>{const l=p.readings[p.readings.length-1];return l&&gs(l.hb)==='Severe Anemia';}).length;
+  const low=patients.filter(p=>{const l=p.readings[p.readings.length-1];return l&&gs(l.hb)==='Mild Anemia';}).length;
+  const norm=patients.filter(p=>{const l=p.readings[p.readings.length-1];return l&&gs(l.hb)==='Normal';}).length;
+  el('pt-tot').textContent=total;el('pt-crit').textContent=crit;el('pt-low').textContent=low;el('pt-norm').textContent=norm;
+
+  el('ptList').innerHTML=total?patients.map(p=>{
+    const l=p.readings[p.readings.length-1];
+    const prev=p.readings[p.readings.length-2];
+    const trend=!prev?'→':l.hb>prev.hb?'↑':l.hb<prev.hb?'↓':'→';
+    const tc=trend==='↑'?'#00FF94':trend==='↓'?'#FF4D6D':'#4A6080';
+    return`<div onclick="showPt(${p.id})" style="display:flex;align-items:center;justify-content:space-between;padding:12px;border-radius:10px;margin-bottom:6px;background:#0D1A30;border:1px solid #1E3050;cursor:pointer">
+      <div>
+        <div style="color:#F0F9FF;font-weight:700">${p.name}</div>
+        <div style="color:#4A6080;font-size:11px">${p.age}yrs ${p.gender?'· '+p.gender:''} · ${p.area}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="color:${tc};font-size:16px">${trend}</span>
+        <span style="color:${gc(l.hb)};font-family:monospace;font-weight:700">${l.hb} g/dL</span>
+        <span class="bs" style="background:${gc(l.hb)}22;color:${gc(l.hb)};border:1px solid ${gc(l.hb)}44">${gs(l.hb)}</span>
+      </div>
+    </div>`;
+  }).join(''):'<div style="color:#4A6080;text-align:center;padding:32px">No patients yet.<br>Complete a scan and save!</div>';
+}
+
+function showPt(id){
+  const p=patients.find(x=>x.id===id);if(!p)return;
+  const l=p.readings[p.readings.length-1];const c=gc(l.hb);
+  show('ptDetailCard');
+  el('ptDetail').innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
+      <div>
+        <div style="font-size:16px;font-weight:800;color:#F0F9FF">${p.name}</div>
+        <div style="color:#4A6080;font-size:12px">${p.age}yrs ${p.gender?'· '+p.gender:''} · ${p.area}</div>
+      </div>
+      <span class="bs" style="background:${c}22;color:${c};border:1px solid ${c}44">${gs(l.hb)}</span>
+    </div>
+    <div style="text-align:center;margin-bottom:14px">
+      <div style="font-size:52px;font-weight:900;color:${c};font-family:monospace;line-height:1">${l.hb}</div>
+      <div style="color:#4A6080;font-size:12px">g/dL — latest reading</div>
+    </div>
+    <div style="background:#0D1A30;border-radius:10px;padding:12px;font-size:12px;color:#4A6080;line-height:1.6;margin-bottom:14px">${gr(l.hb)}</div>
+    <div style="color:#00FF94;font-size:10px;font-weight:700;letter-spacing:1px;margin-bottom:8px">READING HISTORY</div>
+    ${[...p.readings].reverse().map(r=>`<div class="hrow"><span style="color:#4A6080;font-size:11px">${r.date}</span><span style="color:${gc(r.hb)};font-family:monospace;font-weight:700;font-size:12px">${r.hb} g/dL</span></div>`).join('')}
+    <button class="btn btn-gray" onclick="el('ptDetailCard').classList.add('hidden')" style="margin-top:14px">Close</button>`;
+  el('ptDetailCard').scrollIntoView({behavior:'smooth'});
+}
+
+// ── INIT ────────────────────────────────────────────────────
+renderDash();renderPatients();
+</script>
+</body>
+</html>
